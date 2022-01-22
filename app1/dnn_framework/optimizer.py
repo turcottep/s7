@@ -12,8 +12,10 @@ class Optimizer:
         This method updates all parameters.
         :param parameter_grads: The dictionary returns by the network backward method.
         """
+
         for name, parameter in self._parameters.items():
-            parameter[:] = self._step_parameter(parameter, parameter_grads[name], name)
+            parameter[:] = self._step_parameter(
+                parameter, parameter_grads[name], name)
 
     def _step_parameter(self, parameter, parameter_grad, parameter_name):
         """

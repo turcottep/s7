@@ -5,23 +5,42 @@ from mnist import MnistTrainer
 
 
 def main():
-    parser = argparse.ArgumentParser(description='Train Backbone')
-    parser.add_argument('--learning_rate', type=float, help='Choose the learning rate', required=True)
-    parser.add_argument('--batch_size', type=int, help='Set the batch size for the training', required=True)
-    parser.add_argument('--epoch_count', type=int, help='Choose the epoch count', required=True)
-    parser.add_argument('--output_path', type=str, help='Choose the output path', required=True)
+    # parser = argparse.ArgumentParser(description='Train Backbone')
+    # parser.add_argument('--learning_rate', type=float,
+    #                     help='Choose the learning rate', required=True)
+    # parser.add_argument('--batch_size', type=int,
+    #                     help='Set the batch size for the training', required=True)
+    # parser.add_argument('--epoch_count', type=int,
+    #                     help='Choose the epoch count', required=True)
+    # parser.add_argument('--output_path', type=str,
+    #                     help='Choose the output path', required=True)
 
-    parser.add_argument('--checkpoint_path', type=str, help='Choose the output path', default=None)
+    # parser.add_argument('--checkpoint_path', type=str,
+    #                     help='Choose the output path', default=None)
 
-    args = parser.parse_args()
+    # args = parser.parse_args()
 
-    network = create_network(args.checkpoint_path)
-    trainer = MnistTrainer(network, args.learning_rate, args.epoch_count, args.batch_size, args.output_path)
+    checkpoint_path = None
+    learning_rate = 0.01
+    epoch_count = 10
+    batch_size = 128
+    output_path = './output'
+
+    network = create_network(checkpoint_path)
+    trainer = MnistTrainer(network, learning_rate,
+                           epoch_count, batch_size, output_path)
     trainer.train()
 
 
 def create_network(checkpoint_path):
-    layers = []  ## TODO create layers
+    layers = []  # TODO create layers
+    layers.append(FullyConnectedLayer(28 * 28, 128))
+    layers.append(BatchNormalization(128))
+    layers.append(ReLU())
+    layers.append(FullyConnectedLayer(128, 32))
+    layers.append(BatchNormalization(32))
+    layers.append(ReLU())
+    layers.append(FullyConnectedLayer(32, 10))
     network = Network(layers)
     if checkpoint_path is not None:
         network.load(checkpoint_path)

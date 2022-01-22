@@ -27,7 +27,8 @@ class Network:
         parameters = {}
         for i in range(len(self._layers)):
             for name, parameter in self._layers[i].get_parameters().items():
-                parameters[str(i) + '.' + name] = parameter
+                if(name != "None"):
+                    parameters[str(i) + '.' + name] = parameter
 
         return parameters
 
@@ -65,7 +66,8 @@ class Network:
         parameter_grads = {}
 
         for i in reversed(range(len(self._layers))):
-            output_grad, parameters_grad = self._layers[i].backward(output_grad, self._caches[i])
+            output_grad, parameters_grad = self._layers[i].backward(
+                output_grad, self._caches[i])
             for name, parameter in parameters_grad.items():
                 parameter_grads[str(i) + '.' + name] = parameter
 
@@ -77,7 +79,8 @@ class Network:
         :param path: The file path
         """
         with open(path, 'wb') as file:
-            data = {'parameters': self.get_parameters(), 'buffers': self.get_buffers()}
+            data = {'parameters': self.get_parameters(),
+                    'buffers': self.get_buffers()}
             pickle.dump(data, file)
 
     def load(self, path):

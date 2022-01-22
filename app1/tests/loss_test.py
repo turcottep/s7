@@ -8,6 +8,8 @@ from tests import test_loss_input_grad, DELTA
 
 class LossTestCase(unittest.TestCase):
     def test_cross_entropy_loss(self):
+
+        print("\n\n\n big boy test")
         loss = CrossEntropyLoss()
         x = np.array([[1.0, 2.0, 3.0], [2.0, 1.0, 5.0]])
         target = np.array([0, 1])
