@@ -11,9 +11,13 @@ from dnn_framework.layer import Layer
 class FullyConnectedLayer(Layer):
 
     def __init__(self, input_count, output_count):
-        super().__init__
-        self.parameters = {"w": np.random.randn(
-            output_count, input_count), "b": np.zeros(output_count)}
+        super().__init__()
+        w_xavier = np.array(np.random.normal(0, np.sqrt(
+            2/(input_count + output_count)), (output_count, input_count)))
+        b_xavier = np.array(np.random.normal(
+            0, np.sqrt(2/(output_count)), output_count))
+        # print("w_xavier:", w_xavier, "b_xavier:", b_xavier)
+        self.parameters = {"w": w_xavier, "b": b_xavier}
         self.buffers = {"None": np.zeros(output_count)}
 
     def get_parameters(self):
@@ -159,35 +163,35 @@ class BatchNormalization(Layer):
 class Sigmoid(Layer):
 
     def get_parameters(self):
-        return {"None": None}
+        return {"None": np.array([0])}
 
     def get_buffers(self):
-        return {"None": None}
+        return {"None": np.array([0])}
 
     def forward(self, x):
-        y = 1 / (1 + np.exp(-x))
+        y = 1 / (1 + np.exp(-x) + 1e-8)
         cache = [x, y]
         return y, cache
 
     def backward(self, output_gradient, cache):
         [x, y] = cache
-        parameter_gradient = {"None": None}
+        parameter_gradient = {"None": np.array([0])}
         return output_gradient * y * (1 - y), parameter_gradient
 
 
 class ReLU(Layer):
 
     def get_parameters(self):
-        return {"None": None}
+        return {"None": np.array([0])}
 
     def get_buffers(self):
-        return {"None": None}
+        return {"None": np.array([0])}
 
     def forward(self, x):
         cache = [x]
         return np.maximum(x, 0), cache
 
     def backward(self, output_gradient, cache):
-        parameter_gradient = {"None": None}
+        parameter_gradient = {"None": np.array([0])}
         x = cache[0]
         return np.where(x > 0, output_gradient, 0), parameter_gradient

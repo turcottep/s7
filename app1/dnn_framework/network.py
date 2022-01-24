@@ -50,11 +50,11 @@ class Network:
         :return: The output value
         """
         self._caches = []
-
+        # print("forward")
         for layer in self._layers:
             x, cache = layer.forward(x)
             self._caches.append(cache)
-
+        # print("forward done")
         return x
 
     def backward(self, output_grad):
@@ -64,13 +64,16 @@ class Network:
         :return: A dictionary containing the gradient with respect to all layer parameters
         """
         parameter_grads = {}
-
+        # print("backward")
         for i in reversed(range(len(self._layers))):
             output_grad, parameters_grad = self._layers[i].backward(
                 output_grad, self._caches[i])
             for name, parameter in parameters_grad.items():
                 parameter_grads[str(i) + '.' + name] = parameter
-
+        # print("backward done")
+        # print("parameters grad:")
+        # for name, parameter in parameter_grads.items():
+        #     print(name, parameter)
         return parameter_grads
 
     def save(self, path):

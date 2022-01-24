@@ -36,9 +36,12 @@ class Trainer:
         self._validation_dataset = validation_dataset
         self._test_dataset = test_dataset
 
-        self._training_dataset_loader = DatasetLoader(self._training_dataset, batch_size=batch_size, shuffle=True)
-        self._validation_dataset_loader = DatasetLoader(self._validation_dataset, batch_size=batch_size, shuffle=False)
-        self._test_dataset_loader = DatasetLoader(self._test_dataset, batch_size=batch_size, shuffle=False)
+        self._training_dataset_loader = DatasetLoader(
+            self._training_dataset, batch_size=batch_size, shuffle=True)
+        self._validation_dataset_loader = DatasetLoader(
+            self._validation_dataset, batch_size=batch_size, shuffle=False)
+        self._test_dataset_loader = DatasetLoader(
+            self._test_dataset, batch_size=batch_size, shuffle=False)
 
     def train(self):
         """
@@ -47,10 +50,12 @@ class Trainer:
         os.makedirs(self._output_path, exist_ok=True)
 
         for epoch in range(self._epoch_count):
-            print('Training - Epoch [{}/{}]'.format(epoch + 1, self._epoch_count), flush=True)
+            print(
+                'Training - Epoch [{}/{}]'.format(epoch + 1, self._epoch_count), flush=True)
             self._train_one_epoch()
 
-            print('\nValidation - Epoch [{}/{}]'.format(epoch + 1, self._epoch_count), flush=True)
+            print(
+                '\nValidation - Epoch [{}/{}]'.format(epoch + 1, self._epoch_count), flush=True)
             self._validate()
 
             self._save_checkpoint(epoch + 1)
@@ -65,12 +70,17 @@ class Trainer:
         self._clear_between_training_epoch()
 
         self._network.train()
+        # i = 0
         for x, target in tqdm(self._training_dataset_loader):
             y = self._network.forward(x)
+            # print("y:", y)
             loss, y_grad = self._loss.calculate(y, target)
+            # print("loss:", loss, "y_grad:", y_grad)
             parameter_grads = self._network.backward(y_grad)
             self._optimizer.step(parameter_grads)
-
+            # if i > 1:
+            #     raise NotImplementedError()
+            # i += 1
             self._measure_training_metrics(loss, y, target)
 
     def _validate(self):
@@ -83,7 +93,8 @@ class Trainer:
             self._measure_validation_metrics(loss, y, target)
 
     def _save_checkpoint(self, epoch):
-        self._network.save(os.path.join(self._output_path, 'checkpoint_epoch_{}.pkl'.format(epoch)))
+        self._network.save(os.path.join(self._output_path,
+                           'checkpoint_epoch_{}.pkl'.format(epoch)))
 
     def _clear_between_training_epoch(self):
         """

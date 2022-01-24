@@ -21,9 +21,9 @@ def main():
     # args = parser.parse_args()
 
     checkpoint_path = None
-    learning_rate = 0.01
-    epoch_count = 10
-    batch_size = 128
+    learning_rate = 0.001
+    epoch_count = 12
+    batch_size = 1024
     output_path = './output'
 
     network = create_network(checkpoint_path)

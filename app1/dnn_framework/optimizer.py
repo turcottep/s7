@@ -6,14 +6,17 @@ class Optimizer:
 
     def __init__(self, parameters):
         self._parameters = parameters
+        # print("optimizer init, self.parametres = ", self._parameters)
 
     def step(self, parameter_grads):
         """
         This method updates all parameters.
         :param parameter_grads: The dictionary returns by the network backward method.
         """
-
+        # print("optimizer steppping, self.parametres = ")
+        # print(self._parameters)
         for name, parameter in self._parameters.items():
+            # print(name, parameter, parameter_grads[name])
             parameter[:] = self._step_parameter(
                 parameter, parameter_grads[name], name)
 

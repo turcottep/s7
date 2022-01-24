@@ -8,5 +8,9 @@ class SgdOptimizer(Optimizer):
         self.learning_rate = learning_rate
 
     def _step_parameter(self, parameter, parameter_grad, parameter_name):
-        self._parameters[parameter_name] = parameter - \
-            self.learning_rate * parameter_grad
+        # print("tryin to update out here in theses shtreets:", parameter_name,
+        #       self._parameters[parameter_name].shape, parameter.shape, parameter_grad.shape)
+        # if parameter_name != "None":
+        # print("tryin to update out here in theses shtreets:",
+        #       parameter_name, self._parameters[parameter_name])
+        return parameter - self.learning_rate * parameter_grad

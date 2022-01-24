@@ -7,5 +7,5 @@ from tests.layer_test import LayerTestCase
 #
 
 if __name__ == '__main__':
-    test = LayerTestCase()
-    test.test_batch_normalization_backward()
+    test = SgdOptimizerTestCase()
+    test.test_step()
