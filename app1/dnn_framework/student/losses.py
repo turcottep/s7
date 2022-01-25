@@ -7,7 +7,7 @@ class CrossEntropyLoss(Loss):
         new_x = softmax(x)
         new_target = np.zeros_like(new_x)
         new_target[np.arange(len(new_x)), target] = 1
-        self.loss = np.sum(-np.sum(new_target * np.log(new_x+1e-8), axis=1))
+        self.loss = np.mean(-np.sum(new_target * np.log(new_x+1e-8), axis=1))
         input_grad = new_x - new_target
         return self.loss, input_grad
 

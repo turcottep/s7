@@ -33,7 +33,7 @@ def main():
 
 
 def create_network(checkpoint_path):
-    layers = []  # TODO create layers
+    layers = []
     layers.append(FullyConnectedLayer(28 * 28, 128))
     layers.append(BatchNormalization(128))
     layers.append(ReLU())

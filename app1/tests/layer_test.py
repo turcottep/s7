@@ -9,12 +9,10 @@ from tests import test_layer_input_grad, test_layer_parameter_grad, DELTA
 class LayerTestCase(unittest.TestCase):
     def test_fully_connected_layer_forward(self):
         layer = FullyConnectedLayer(2, 1)
-        # print(layer.get_parameters())
         layer.get_parameters()['w'][:] = np.array([[2, 3]])
         layer.get_parameters()['b'][:] = np.array([1])
         x = np.array([[-1.0, 0.5]])
         y, _ = layer.forward(x)
-        # print("y:", y)
         self.assertAlmostEqual(y[0], 0.5, delta=DELTA)
 
     def test_fully_connected_layer_forward_backward(self):

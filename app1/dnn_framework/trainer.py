@@ -1,5 +1,7 @@
 import os
 import time
+from matplotlib import pyplot as plt
+import numpy as np
 
 from tqdm import tqdm
 
@@ -48,7 +50,7 @@ class Trainer:
         Train the network.
         """
         os.makedirs(self._output_path, exist_ok=True)
-
+        all_metrics = np.zeros((self._epoch_count, 4))
         for epoch in range(self._epoch_count):
             print(
                 'Training - Epoch [{}/{}]'.format(epoch + 1, self._epoch_count), flush=True)
@@ -60,11 +62,37 @@ class Trainer:
 
             self._save_checkpoint(epoch + 1)
             self._save_figures(self._output_path)
-            self._print_metrics()
+            all_metrics[epoch] = self._print_metrics()
 
         print('\nTest')
         self._network.eval()
+        self._display_all_metrics(all_metrics)
         self._test(self._network, self._test_dataset_loader)
+
+    def _display_all_metrics(self, all_metrics):
+        [training_loss, training_accuracy, validation_loss,
+            validation_accuracy] = all_metrics.T
+        # show graph of loss for training and validation
+        plt.figure(figsize=(10, 5))
+        plt.plot(training_loss, label='training loss')
+        plt.plot(validation_loss, label='validation loss')
+        plt.legend()
+        plt.title('Loss')
+        plt.xlabel('Epoch')
+        plt.ylabel('Loss')
+        plt.savefig(os.path.join(self._output_path, 'loss.png'))
+        plt.show()
+
+        # show graph of accuracy for training and validation
+        plt.figure(figsize=(10, 5))
+        plt.plot(training_accuracy, label='training accuracy')
+        plt.plot(validation_accuracy, label='validation accuracy')
+        plt.legend()
+        plt.title('Accuracy')
+        plt.xlabel('Epoch')
+        plt.ylabel('Accuracy')
+        plt.savefig(os.path.join(self._output_path, 'accuracy.png'))
+        plt.show()
 
     def _train_one_epoch(self):
         self._clear_between_training_epoch()

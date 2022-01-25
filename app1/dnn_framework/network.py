@@ -51,6 +51,7 @@ class Network:
         """
         self._caches = []
         # print("forward")
+        i = 0
         for layer in self._layers:
             x, cache = layer.forward(x)
             self._caches.append(cache)

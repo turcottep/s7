@@ -62,6 +62,7 @@ class MnistTrainer(Trainer):
                                                          self._training_accuracy_metric.get_accuracy()))
         print('Validation : Loss={}, Accuracy={}\n'.format(self._validation_loss_metric.get_loss(),
                                                            self._validation_accuracy_metric.get_accuracy()))
+        return [self._training_loss_metric.get_loss(), self._training_accuracy_metric.get_accuracy(), self._validation_loss_metric.get_loss(), self._validation_accuracy_metric.get_accuracy()]
 
     def _test(self, network, test_dataset_loader):
         test_accuracy_metric = ClassificationAccuracyMetric()
