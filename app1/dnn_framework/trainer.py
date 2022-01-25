@@ -98,17 +98,12 @@ class Trainer:
         self._clear_between_training_epoch()
 
         self._network.train()
-        # i = 0
         for x, target in tqdm(self._training_dataset_loader):
             y = self._network.forward(x)
-            # print("y:", y)
             loss, y_grad = self._loss.calculate(y, target)
-            # print("loss:", loss, "y_grad:", y_grad)
             parameter_grads = self._network.backward(y_grad)
             self._optimizer.step(parameter_grads)
-            # if i > 1:
-            #     raise NotImplementedError()
-            # i += 1
+
             self._measure_training_metrics(loss, y, target)
 
     def _validate(self):

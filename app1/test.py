@@ -7,5 +7,5 @@ from tests.layer_test import LayerTestCase
 #
 
 if __name__ == '__main__':
-    test = SgdOptimizerTestCase()
-    test.test_step()
+    test = LossTestCase()
+    test.test_cross_entropy_loss()
