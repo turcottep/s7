@@ -59,10 +59,12 @@ class BatchNormalization(Layer):
     def _forward_training(self, x):
         mean = np.mean(x, axis=0)
         variance = np.var(x, axis=0)
+
         e = self._buffers["epsilon"]
-        x_hat = (x - mean) / np.sqrt(variance + e)
-        gamma = self._parameters["gamma"]
         beta = self._parameters["beta"]
+        gamma = self._parameters["gamma"]
+
+        x_hat = (x - mean) / np.sqrt(variance + e)
         y = gamma * x_hat + beta
         cache = [x, mean, variance, x_hat]
 
@@ -71,17 +73,20 @@ class BatchNormalization(Layer):
             1-alpha)*self._buffers["global_mean"] + alpha*mean
         self._buffers["global_variance"] = (
             1-alpha)*self._buffers["global_variance"] + alpha*variance
+
         return y, cache
 
     def _forward_evaluation(self, x):
         mean = self._buffers["global_mean"]
         variance = self._buffers["global_variance"]
         e = self._buffers["epsilon"]
-        x_hat = (x - mean) / np.sqrt(variance + e)
         gamma = self._parameters["gamma"]
         beta = self._parameters["beta"]
+
+        x_hat = (x - mean) / np.sqrt(variance + e)
         y = gamma * x_hat + beta
         cache = [x, mean, variance, x_hat]
+
         return y, cache
 
     def backward(self, output_grad, cache):
