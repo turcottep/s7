@@ -4,6 +4,7 @@ import os
 
 import numpy as np
 import torch
+import torch.nn as nn
 import torch.optim as optim
 from torchvision import transforms
 from models import ClassificationNetwork, DetectionNetwork, SegmentationNetwork
@@ -53,22 +54,17 @@ class ConveyorCnnTrainer():
         else:
             raise ValueError('Not supported task')
 
-
-     
-
     def _create_criterion(self, task):
-        # if task == 'classification':
-        #     # À compléter
-        #     raise NotImplementedError()
-        # elif task == 'detection':
-        #     # À compléter
-        #     raise NotImplementedError()
-        # elif task == 'segmentation':
-        #     # À compléter
-        #     raise NotImplementedError()
-        # else:
-        #     raise ValueError('Not supported task')
-        return 1
+        if task == 'classification':
+            return nn.CrossEntropyLoss()
+        elif task == 'detection':
+            # À compléter
+            raise NotImplementedError()
+        elif task == 'segmentation':
+            # À compléter
+            raise NotImplementedError()
+        else:
+            raise ValueError('Not supported task')
 
     def _create_metric(self, task):
         if task == 'classification':
@@ -249,7 +245,10 @@ class ConveyorCnnTrainer():
         :return: La valeur de la fonction de coût pour le lot
         """
 
-        
+        print("image:",image.shape)
+        print("class_labels:",class_labels.shape)
+        output = model.forward(image)
+
         # if task == 'classification':
         #     # À compléter
         #     raise NotImplementedError()
@@ -261,7 +260,10 @@ class ConveyorCnnTrainer():
         #     raise NotImplementedError()
         # else:
         #     raise ValueError('Not supported task')
-        raise NotImplementedError()
+        # raise NotImplementedError()
+
+        loss = criterion(output, class_labels)
+        return loss
 
     def _test_batch(self, task, model, criterion, metric, image, segmentation_target, boxes, class_labels):
         """
