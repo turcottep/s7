@@ -259,20 +259,19 @@ class ConveyorCnnTrainer():
 
         output = model(image)
 
-        # if task == 'classification':
-        #     # À compléter
-        #     raise NotImplementedError()
-        # elif task == 'detection':
-        #     # À compléter
-        #     raise NotImplementedError()
-        # elif task == 'segmentation':
-        #     # À compléter
-        #     raise NotImplementedError()
-        # else:
-        #     raise ValueError('Not supported task')
-        # raise NotImplementedError()
+        if task == 'classification':
+            loss = criterion(output, class_labels)
+            metric.accumulate(output, class_labels)
 
-        loss = criterion(output, class_labels)
+        elif task == 'detection':
+            # À compléter
+            raise NotImplementedError()
+        elif task == 'segmentation':
+            # À compléter
+            raise NotImplementedError()
+        else:
+            raise ValueError('Not supported task')
+        
         loss.backward()
         optimizer.step()
         return loss
@@ -317,8 +316,22 @@ class ConveyorCnnTrainer():
 
         # À compléter
         # Same thing as train_batch, but without optimizer, (data=test_data already))
-        raise NotImplementedError()
+        output = model(image)
 
+        if task == 'classification':
+            loss = criterion(output, class_labels)
+            metric.accumulate(output, class_labels)
+
+        elif task == 'detection':
+            # À compléter
+            raise NotImplementedError()
+        elif task == 'segmentation':
+            # À compléter
+            raise NotImplementedError()
+        else:
+            raise ValueError('Not supported task')
+            
+        return loss
 
 if __name__ == '__main__':
     #  Settings

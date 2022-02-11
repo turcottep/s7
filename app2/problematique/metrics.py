@@ -58,7 +58,7 @@ class AccuracyMetric(Metric):
         self._total_count += prediction.size
 
     def get_value(self):
-        return self._good_count / self._total_count
+        return self._good_count / (self._total_count+ 1E-8)
 
 
 class MeanAveragePrecisionMetric(Metric):
