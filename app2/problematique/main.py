@@ -49,11 +49,11 @@ class ConveyorCnnTrainer():
 
     def _create_model(self, task):
         if task == 'classification':
-            return ClassificationNetwork((53, 53), 3)
+            return ClassificationNetwork(1, 3)  # todo make sure you use them
         elif task == 'detection':
-            return DetectionNetwork()
+            return DetectionNetwork(1, 3)  # todo
         elif task == 'segmentation':
-            return SegmentationNetwork()
+            return SegmentationNetwork(1, 3)  # todo
         else:
             raise ValueError('Not supported task')
 
@@ -61,11 +61,11 @@ class ConveyorCnnTrainer():
         if task == 'classification':
             return nn.BCEWithLogitsLoss()
         elif task == 'detection':
-            # À compléter
-            raise NotImplementedError()
+            # todo
+            return nn.BCEWithLogitsLoss()
         elif task == 'segmentation':
-            # À compléter
-            raise NotImplementedError()
+            # todo
+            return nn.BCEWithLogitsLoss()
         else:
             raise ValueError('Not supported task')
 
@@ -271,7 +271,7 @@ class ConveyorCnnTrainer():
             raise NotImplementedError()
         else:
             raise ValueError('Not supported task')
-        
+
         loss.backward()
         optimizer.step()
         return loss
@@ -330,8 +330,9 @@ class ConveyorCnnTrainer():
             raise NotImplementedError()
         else:
             raise ValueError('Not supported task')
-            
+
         return loss
+
 
 if __name__ == '__main__':
     #  Settings
