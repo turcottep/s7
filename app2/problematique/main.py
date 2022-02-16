@@ -1,7 +1,6 @@
 #! usr/bin/python3
 import argparse
 import os
-from cv2 import threshold
 from matplotlib import pyplot as plt
 
 import numpy as np
@@ -65,8 +64,7 @@ class ConveyorCnnTrainer():
         elif task == 'detection':
             return (nn.BCELoss(), nn.MSELoss())
         elif task == 'segmentation':
-            # todo
-            return nn.BCEWithLogitsLoss()
+            return nn.CrossEntropyLoss()
         else:
             raise ValueError('Not supported task')
 
@@ -281,8 +279,9 @@ class ConveyorCnnTrainer():
             lossBCE_pt2 = lossBCE_fct(
                 output[:, :, 3:7], boxes_like_output[:, :, 3:7])
             # loss mce for the rest of the tensor
-            lossMCE = lossMCE_fct(output[:, :,1:4], boxes_like_output[:, :,1:4])
-            loss = 0.25 *lossBCE_pt1 + 0.25 * lossBCE_pt2 + lossMCE
+            lossMCE = lossMCE_fct(
+                output[:, :, 1:4], boxes_like_output[:, :, 1:4])
+            loss = 0.25 * lossBCE_pt1 + 0.25 * lossBCE_pt2 + lossMCE
 
             # print("outpit \n", output[1])
 
@@ -291,8 +290,10 @@ class ConveyorCnnTrainer():
             # raise NotImplementedError()
 
         elif task == 'segmentation':
-            # À compléter
-            raise NotImplementedError()
+            new_segmentation_target = clean_segmentation(segmentation_target)
+            loss = criterion(output, new_segmentation_target)
+            metric.accumulate(output, segmentation_target)
+
         else:
             raise ValueError('Not supported task')
 
@@ -354,14 +355,16 @@ class ConveyorCnnTrainer():
                 output[:, :, 0], boxes_like_output[:, :, 0])
             lossBCE_pt2 = lossBCE_fct(
                 output[:, :, 3:7], boxes_like_output[:, :, 3:7])
-            lossMCE = lossMCE_fct(output[:, :,1:4], boxes_like_output[:, :,1:4])
-            loss = 0.25 *lossBCE_pt1 + 0.25 * lossBCE_pt2 + lossMCE
+            lossMCE = lossMCE_fct(
+                output[:, :, 1:4], boxes_like_output[:, :, 1:4])
+            loss = 0.25 * lossBCE_pt1 + 0.25 * lossBCE_pt2 + lossMCE
 
             metric.accumulate(output, boxes)
 
         elif task == 'segmentation':
-            # À compléter
-            raise NotImplementedError()
+            new_segmentation_target = clean_segmentation(segmentation_target)
+            loss = criterion(output, new_segmentation_target)
+            metric.accumulate(output, segmentation_target)
         else:
             raise ValueError('Not supported task')
 
@@ -389,15 +392,29 @@ def clean_boxes(boxes):
 
     for j in range(len(boxes)):
         for i in range(len(boxes[j])):
-            boxes_sorted[j][i][0] = boxes[j][i][0] #classification 
-            boxes_sorted[j][i][1] = boxes[j][i][1] # regression
-            boxes_sorted[j][i][2] = boxes[j][i][2] # regression
-            boxes_sorted[j][i][3] = boxes[j][i][3] # regression
+            boxes_sorted[j][i][0] = boxes[j][i][0]  # classification
+            boxes_sorted[j][i][1] = boxes[j][i][1]  # regression
+            boxes_sorted[j][i][2] = boxes[j][i][2]  # regression
+            boxes_sorted[j][i][3] = boxes[j][i][3]  # regression
             boxes_sorted[j][i][4] = boxes[j][i][4] == 0 and boxes[j][i][0].item() == 1
             boxes_sorted[j][i][5] = boxes[j][i][4] == 1 and boxes[j][i][0].item() == 1
             boxes_sorted[j][i][6] = boxes[j][i][4] == 2 and boxes[j][i][0].item() == 1
 
     return boxes_sorted
+
+
+def clean_segmentation(target):
+    target_clean = torch.Tensor(len(target), 4, 53, 53)
+
+    for i in range(len(target)):
+        for j in range(53):
+            for k in range(53):
+                target_clean[i][0][j][k] = target[i][j][k].item() == 0
+                target_clean[i][1][j][k] = target[i][j][k].item() == 1
+                target_clean[i][2][j][k] = target[i][j][k].item() == 2
+                target_clean[i][3][j][k] = target[i][j][k].item() == 3
+
+    return target_clean
 
 
 def pad_for_metrics(output, boxes):
