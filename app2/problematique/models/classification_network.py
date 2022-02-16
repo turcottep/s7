@@ -1,4 +1,3 @@
-from sympy import true
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -7,26 +6,22 @@ import torch.nn.functional as F
 class ClassificationNetwork(nn.Module):
     def __init__(self, in_channels, n_classes):
         super(ClassificationNetwork, self).__init__()
-        self.conv1 = nn.Conv2d(1, 32, 5, stride=1, padding=1)
+        self.conv1 = nn.Conv2d(1, 16, 5, stride=1, padding=1)
         self.relu1 = nn.ReLU()
         self.maxpool1 = nn.MaxPool2d(3, stride=2)
 
-        self.conv2 = nn.Conv2d(32, 64, 5, stride=1, padding=1)
+        self.conv2 = nn.Conv2d(16, 32, 5, stride=1, padding=1)
         self.relu2 = nn.ReLU()
         self.maxpool2 = nn.MaxPool2d(3, stride=2)
 
-        self.conv3 = nn.Conv2d(64, 128, 5, stride=1, padding=1)
+        self.conv3 = nn.Conv2d(32, 64, 5, stride=1, padding=1)
         self.relu3 = nn.ReLU()
         self.maxpool3 = nn.MaxPool2d(3, stride=2)
 
-        self.linear4 = nn.Linear(2048, 1024, bias=true)
+        self.linear4 = nn.Linear(1024, 128, bias=True)
         self.relu4 = nn.ReLU()
 
-        self.linear5 = nn.Linear(1024, 512, bias=true)
-        self.relu5 = nn.ReLU()
-
-        self.linear6 = nn.Linear(512, 3, bias=true)
-        self.softmax6 = nn.Softmax()
+        self.linear5 = nn.Linear(128, 3, bias=True)
 
         # À compléter
 
@@ -51,10 +46,7 @@ class ClassificationNetwork(nn.Module):
         x12 = self.relu4(x11)
 
         x13 = self.linear5(x12)
-        x14 = self.relu5(x13)
 
-        x15 = self.linear6(x14)
-
-        output = x15
+        output = x13
 
         return output

@@ -203,7 +203,7 @@ def detection_intersection_over_union(box_a, box_b):
 
     intersection_area = intersection_w * intersection_h
 
-    return intersection_area / (area_a + area_b - intersection_area)
+    return intersection_area / (area_a + area_b - intersection_area + 1E-8)
 
 
 class SegmentationIntersectionOverUnionMetric(Metric):

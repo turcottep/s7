@@ -1,6 +1,8 @@
 #! usr/bin/python3
 import argparse
 import os
+from cv2 import threshold
+from matplotlib import pyplot as plt
 
 import numpy as np
 import torch
@@ -61,8 +63,7 @@ class ConveyorCnnTrainer():
         if task == 'classification':
             return nn.BCEWithLogitsLoss()
         elif task == 'detection':
-            # todo
-            return nn.BCEWithLogitsLoss()
+            return (nn.BCELoss(), nn.MSELoss())
         elif task == 'segmentation':
             # todo
             return nn.BCEWithLogitsLoss()
@@ -111,6 +112,8 @@ class ConveyorCnnTrainer():
             test_loss, test_metric.get_name(), test_metric.get_value()))
 
         prediction = self._model(image)
+        print("prediction : ", prediction)
+        print("target : ", boxes)
         visualizer.show_prediction(
             image[0], prediction[0], segmentation_target[0], boxes[0], class_labels[0])
 
@@ -264,8 +267,29 @@ class ConveyorCnnTrainer():
             metric.accumulate(output, class_labels)
 
         elif task == 'detection':
-            # À compléter
-            raise NotImplementedError()
+            # print("boxes weak: \n",boxes[1])
+
+            boxes_like_output = clean_boxes(boxes)
+            # print("boxes_clean \n", boxes_like_output[1])
+
+            # output_clean = clean_output(output)
+
+            lossBCE_fct, lossMCE_fct = criterion
+            # loss bce for first output of each tensor
+            lossBCE_pt1 = lossBCE_fct(
+                output[:, :, 0], boxes_like_output[:, :, 0])
+            lossBCE_pt2 = lossBCE_fct(
+                output[:, :, 3:7], boxes_like_output[:, :, 3:7])
+            # loss mce for the rest of the tensor
+            lossMCE = lossMCE_fct(output[:, :,1:4], boxes_like_output[:, :,1:4])
+            loss = 0.25 *lossBCE_pt1 + 0.25 * lossBCE_pt2 + lossMCE
+
+            # print("outpit \n", output[1])
+
+            # padded_output, padded_boxes = pad_for_metrics(output, boxes_sorted)
+            metric.accumulate(output, boxes)
+            # raise NotImplementedError()
+
         elif task == 'segmentation':
             # À compléter
             raise NotImplementedError()
@@ -323,8 +347,18 @@ class ConveyorCnnTrainer():
             metric.accumulate(output, class_labels)
 
         elif task == 'detection':
-            # À compléter
-            raise NotImplementedError()
+            boxes_like_output = clean_boxes(boxes)
+
+            lossBCE_fct, lossMCE_fct = criterion
+            lossBCE_pt1 = lossBCE_fct(
+                output[:, :, 0], boxes_like_output[:, :, 0])
+            lossBCE_pt2 = lossBCE_fct(
+                output[:, :, 3:7], boxes_like_output[:, :, 3:7])
+            lossMCE = lossMCE_fct(output[:, :,1:4], boxes_like_output[:, :,1:4])
+            loss = 0.25 *lossBCE_pt1 + 0.25 * lossBCE_pt2 + lossMCE
+
+            metric.accumulate(output, boxes)
+
         elif task == 'segmentation':
             # À compléter
             raise NotImplementedError()
@@ -332,6 +366,50 @@ class ConveyorCnnTrainer():
             raise ValueError('Not supported task')
 
         return loss
+
+
+def clean_output(output):
+    threshold = 0.5
+    # new  = torch.zeros_like(output)
+
+    # # new[mask] = output[mask]
+
+    for j in range(len(output)):
+        this_output = output[j]
+        for i in range(len(this_output)):
+            if(this_output[i][0].item() < threshold):
+                # this_box[i][0] = 0
+                output[j][i][1].mul_(0)
+                output[j][i][2].mul_(0)
+                output[j][i][3].mul_(0)
+
+
+def clean_boxes(boxes):
+    boxes_sorted = torch.Tensor(len(boxes), 3, 7)
+
+    for j in range(len(boxes)):
+        for i in range(len(boxes[j])):
+            boxes_sorted[j][i][0] = boxes[j][i][0] #classification 
+            boxes_sorted[j][i][1] = boxes[j][i][1] # regression
+            boxes_sorted[j][i][2] = boxes[j][i][2] # regression
+            boxes_sorted[j][i][3] = boxes[j][i][3] # regression
+            boxes_sorted[j][i][4] = boxes[j][i][4] == 0 and boxes[j][i][0].item() == 1
+            boxes_sorted[j][i][5] = boxes[j][i][4] == 1 and boxes[j][i][0].item() == 1
+            boxes_sorted[j][i][6] = boxes[j][i][4] == 2 and boxes[j][i][0].item() == 1
+
+    return boxes_sorted
+
+
+def pad_for_metrics(output, boxes):
+    padded_output = torch.zeros(len(output), 3, 7)
+    padded_boxes = torch.zeros(len(boxes), 3, 5)
+    for i in range(len(output)):
+        for j in range(len(output[i])):
+            padded_output[i][j] = torch.Tensor(
+                [output[i][j][0],  output[i][j][1], output[i][j][2], output[i][j][3], j == 0, j == 1, j == 2])
+            padded_boxes[i][j] = torch.Tensor(
+                [boxes[i][j][0], boxes[i][j][1], boxes[i][j][2], boxes[i][j][3], j])
+    return padded_output, padded_boxes
 
 
 if __name__ == '__main__':
