@@ -141,6 +141,7 @@ class Visualizer:
 
         n_class = prediction.shape[0]
         prediction = np.argmax(prediction, axis=0)
+        print("shapes",prediction.shape, target.shape)
         a = np.concatenate((prediction, target), axis=1)
         ax1.imshow(image[0], cmap='gray', vmax=1)
         ax1.set_title('Input image')

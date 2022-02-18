@@ -17,15 +17,15 @@ class DetectionNetwork(nn.Module):
         self.relu2 = nn.ReLU()
         self.maxpool2 = nn.MaxPool2d(3, stride=2)
 
-        self.conv3 = nn.Conv2d(32, 64, 5, stride=1, padding=1)
-        self.batchnorm3 = nn.BatchNorm2d(64)
+        self.conv3 = nn.Conv2d(32, 32, 5, stride=1, padding=1)
+        self.batchnorm3 = nn.BatchNorm2d(32)
         self.relu3 = nn.ReLU()
         self.maxpool3 = nn.MaxPool2d(3, stride=2)
 
-        self.linear4 = nn.Linear(1024, 512, bias=True)
+        self.linear4 = nn.Linear(512, 256, bias=True)
         self.relu4 = nn.ReLU()
 
-        self.linear5 = nn.Linear(512, 512, bias=True)
+        self.linear5 = nn.Linear(256, 512, bias=True)
         self.relu5 = nn.ReLU()
 
         self.linear6 = nn.Linear(512, 3*7, bias=True)
@@ -52,7 +52,7 @@ class DetectionNetwork(nn.Module):
         x9 = self.maxpool3(x8)
 
         x10 = x9.reshape((x.size(0), x9.size(1) * x9.size(2) * x9.size(3)))
-
+        # print("x10.size() = ", x10.size())
         x11 = self.linear4(x10)
         x12 = self.relu4(x11)
 
@@ -66,3 +66,20 @@ class DetectionNetwork(nn.Module):
 
         return output
 
+# class DetectionNetworkLoss(nn.Module):
+#     def __init__(self):
+#         super(DetectionNetworkLoss, self).__init__()
+
+#         self.lossBCE = nn.BCEWithLogitsLoss()
+#         self.lossCrossEntropy = nn.CrossEntropyLoss()
+#         self.sigmoid = nn.Sigmoid()
+#         self.lossMSE = nn.MSELoss()
+
+#     def forward(self, x, y):
+#         # À compléter
+#         lossBCE = self.lossBCE(x[:, :, 0], y[:, :, 0])
+#         lossMSE = self.lossMSE(self.sigmoid(x[:,:,1:4]), self.sigmoid(y[:,:,1:4]))
+#         lossCrossEntropy = self.lossCrossEntropy(x[:, :, 3:7], y[:, :, 3:7])
+
+#         loss = 0.25 * lossBCE + 0.25 *lossMSE + lossCrossEntropy
+#         return loss

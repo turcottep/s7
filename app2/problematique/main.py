@@ -13,6 +13,7 @@ from models import ClassificationNetwork, DetectionNetwork, SegmentationNetwork
 from dataset import ConveyorSimulator
 from metrics import AccuracyMetric, MeanAveragePrecisionMetric, SegmentationIntersectionOverUnionMetric
 from visualizer import Visualizer
+import torch.nn.functional as F
 
 TRAIN_VALIDATION_SPLIT = 0.9
 CLASS_PROBABILITY_THRESHOLD = 0.5
@@ -43,8 +44,8 @@ class ConveyorCnnTrainer():
         self._model = self._create_model(self._args.task).to(self._device)
         self._criterion = self._create_criterion(self._args.task)
 
-        print('Model : ')
-        print(self._model)
+        # print('Model : ')
+        # print(self._model)
         print('\nNumber of parameters in the model : ', sum(p.numel()
                                                             for p in self._model.parameters()))
 
@@ -113,7 +114,7 @@ class ConveyorCnnTrainer():
         print("prediction : ", prediction)
         print("target : ", boxes)
         visualizer.show_prediction(
-            image[0], prediction[0], segmentation_target[0], boxes[0], class_labels[0])
+            image[0], prediction[0], F.pad(segmentation_target, (5, 6, 5, 6),value=3), boxes[0], class_labels[0])
 
     def train(self):
         epochs_train_losses = []
@@ -208,8 +209,10 @@ class ConveyorCnnTrainer():
                 validation_loss, validation_metric.get_name(), validation_metric_value))
 
             prediction = self._model(image)
+            image_index = 1
+            test_mask = F.pad(masks[image_index], (5, 6, 5, 6), value=3)
             visualizer.show_prediction(
-                image[0], prediction[0], masks[0], boxes[0], labels[0])
+                image[image_index], prediction[image_index], test_mask, boxes[image_index], labels[image_index])
             visualizer.show_learning_curves(epochs_train_losses, epochs_validation_losses,
                                             epochs_train_metrics, epochs_validation_metrics,
                                             train_metric.get_name())
@@ -290,9 +293,10 @@ class ConveyorCnnTrainer():
             # raise NotImplementedError()
 
         elif task == 'segmentation':
-            new_segmentation_target = clean_segmentation(segmentation_target)
-            loss = criterion(output, new_segmentation_target)
-            metric.accumulate(output, segmentation_target)
+            # new_segmentation_target = clean_segmentation(segmentation_target)
+            segmentation_target_clean = F.pad(segmentation_target, (5, 6, 5, 6), value=3)
+            loss = criterion(output, segmentation_target_clean)
+            metric.accumulate(output, segmentation_target_clean)
 
         else:
             raise ValueError('Not supported task')
@@ -339,8 +343,6 @@ class ConveyorCnnTrainer():
         :return: La valeur de la fonction de coût pour le lot
         """
 
-        # À compléter
-        # Same thing as train_batch, but without optimizer, (data=test_data already))
         output = model(image)
 
         if task == 'classification':
@@ -362,9 +364,9 @@ class ConveyorCnnTrainer():
             metric.accumulate(output, boxes)
 
         elif task == 'segmentation':
-            new_segmentation_target = clean_segmentation(segmentation_target)
-            loss = criterion(output, new_segmentation_target)
-            metric.accumulate(output, segmentation_target)
+            segmentation_target_clean = F.pad(segmentation_target, (5, 6, 5, 6), value=3)
+            loss = criterion(output, segmentation_target_clean)
+            metric.accumulate(output, segmentation_target_clean)
         else:
             raise ValueError('Not supported task')
 
