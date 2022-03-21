@@ -31,11 +31,8 @@ class DetectionNetwork(nn.Module):
         self.linear6 = nn.Linear(512, 3*7, bias=True)
         self.sigmoid6 = nn.Sigmoid()
 
-        # À compléter
-
     def forward(self, x):
 
-        # À compléter
         x1 = self.conv1(x)
         x1 = self.batchnorm1(x1)
         x2 = self.relu1(x1)
@@ -52,7 +49,7 @@ class DetectionNetwork(nn.Module):
         x9 = self.maxpool3(x8)
 
         x10 = x9.reshape((x.size(0), x9.size(1) * x9.size(2) * x9.size(3)))
-        # print("x10.size() = ", x10.size())
+        
         x11 = self.linear4(x10)
         x12 = self.relu4(x11)
 

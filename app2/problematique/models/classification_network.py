@@ -23,11 +23,8 @@ class ClassificationNetwork(nn.Module):
 
         self.linear5 = nn.Linear(128, 3, bias=True)
 
-        # À compléter
-
     def forward(self, x):
 
-        # À compléter
         x1 = self.conv1(x)
         x2 = self.relu1(x1)
         x3 = self.maxpool1(x2)
