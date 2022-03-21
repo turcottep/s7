@@ -14,8 +14,10 @@ nb_symbols = size_x * size_y
 dict_size = nb_symbols + 3
 
 dictionary = {'#': 0, 'a': 1, 'b': 2, 'c': 3, 'd': 4, 'e': 5, 'f': 6, 'g': 7, 'h': 8, 'i': 9, 'j': 10, 'k': 11, 'l': 12, 'm': 13,
-              'n': 14, 'o': 15, 'p': 16, 'q': 17, 'r': 18, 's': 19, 't': 20, 'u': 21, 'v': 22, 'w': 23, 'x': 24, 'y': 25, 'z': 26, '$': 27, '%': 28}
+              'n': 14, 'o': 15, 'p': 16, 'q': 17, 'r': 18, 's': 19, 't': 20, 'u': 21, 'v': 22, 'w': 23, 'x': 24, 'y': 25, 'z': 26, '$': 27}
 # #:sos, $:eos, %:pad
+reverse_dictionary = {0: '#', 1: 'a', 2: 'b', 3: 'c', 4: 'd', 5: 'e', 6: 'f', 7: 'g', 8: 'h', 9: 'i', 10: 'j', 11: 'k', 12: 'l',
+                      13: 'm', 14: 'n', 15: 'o', 16: 'p', 17: 'q', 18: 'r', 19: 's', 20: 't', 21: 'u', 22: 'v', 23: 'w', 24: 'x', 25: 'y', 26: 'z', 27: '$'}
 answer_dict_size = len(dictionary)
 
 
@@ -61,15 +63,15 @@ class HandwrittenWords(Dataset):
             symbols = all_x_quantized + all_y_quantized * size_x
 
             # get max sequence length
-            if(len(symbols) > max_sequence_len):
-                max_sequence_len = len(symbols)
+            if(len(all_x_quantized) > max_sequence_len):
+                max_sequence_len = len(all_x_quantized)
 
             # get max answer length
             if(len(answer) > max_answer_len):
                 max_answer_len = len(answer)
 
             # add to list of words
-            word_list_symbols.append((answer, symbols))
+            word_list_symbols.append((answer, [all_x_normalized, all_y_normalized]))
 
         # Insert sos, eos and pad symbols
         for i, word in enumerate(word_list_symbols):
@@ -78,7 +80,7 @@ class HandwrittenWords(Dataset):
 
             # add sos,eos,pad to words
             nb_pad = max_answer_len - len(answer)
-            answer = "#" + answer + "%" + nb_pad * "$"
+            answer = answer + "$" + nb_pad * "#"
 
             # get answer in symbol (0-27) form, and one-hot
             # answer_symbol = torch.zeros(max_answer_len + 2, len(dictionary))
@@ -86,16 +88,20 @@ class HandwrittenWords(Dataset):
             #     letter_symbol = dictionary[letter]
             #     answer_symbol[j][letter_symbol] = 1
 
-            answer_symbol = []
+            answer_symbol = torch.zeros(max_answer_len + 1)
             for j, letter in enumerate(answer):
                 letter_symbol = dictionary[letter]
-                answer_symbol.append(letter_symbol)
+                answer_symbol[j] = letter_symbol
 
-            nb_padding = max_sequence_len - len(symbols)
-            symbols = np.insert(symbols, 0, start_symbol)
-            symbols = np.insert(symbols, len(symbols), stop_symbol)
-            symbols = np.pad(symbols, (0, nb_padding), mode='constant', constant_values=pad_symbol)
-            self.word_list_symbols.append((answer_symbol, torch.tensor(symbols, dtype=torch.long)))
+            # symbols = np.insert(symbols, len(symbols), stop_symbol)
+            all_x = symbols[0]
+            all_y = symbols[1]
+            nb_padding = max_sequence_len - len(all_x)
+
+            all_x_paded = np.pad(all_x, (0, nb_padding), 'constant', constant_values=all_x[-1])
+            all_y_paded = np.pad(all_y, (0, nb_padding), 'constant', constant_values=all_y[-1])
+            symbols = torch.tensor([all_x_paded, all_y_paded], dtype=torch.float)
+            self.word_list_symbols.append((answer_symbol, symbols))
 
         print("example : ", self.word_list_symbols[0])
         print("answer_symbol : ", answer_symbol)
@@ -173,6 +179,14 @@ class HandwrittenWords(Dataset):
         plt.text(0, 0, answer)
 
         plt.show()
+
+
+def symbols_to_letters(symbols):
+    letters = []
+    for symbol in symbols:
+        letter = reverse_dictionary[symbol.item()]
+        letters.append(letter)
+    return letters
 
 
 if __name__ == "__main__":
