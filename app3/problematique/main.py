@@ -56,7 +56,7 @@ def main():
         dataset_val, batch_size=batch_size, shuffle=True, num_workers=n_workers)
 
     # Instanciation du model
-    model = trajectory2seq()
+    model = trajectory2seq(device)
 
     # Initialisation des variables
     # À compléter
@@ -81,12 +81,14 @@ def main():
 
             for batch_idx, data in enumerate(dataload_train):
                 target, input_seq = data
+                print("data", data)
                 input_seq = input_seq.to(device).long()
 
                 optimizer.zero_grad()
                 print("input_seq:", input_seq.shape)
                 output, hidden, attention = model(input_seq)
                 # TODO make it work with target.to(device).long()
+                print("target", target)
                 loss = criterion(output, target.to(device).long())
                 loss.backward()
                 optimizer.step()

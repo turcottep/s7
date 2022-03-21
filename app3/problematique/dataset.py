@@ -13,6 +13,11 @@ size_y = 32
 nb_symbols = size_x * size_y
 dict_size = nb_symbols + 3
 
+dictionary = {'#': 0, 'a': 1, 'b': 2, 'c': 3, 'd': 4, 'e': 5, 'f': 6, 'g': 7, 'h': 8, 'i': 9, 'j': 10, 'k': 11, 'l': 12, 'm': 13,
+              'n': 14, 'o': 15, 'p': 16, 'q': 17, 'r': 18, 's': 19, 't': 20, 'u': 21, 'v': 22, 'w': 23, 'x': 24, 'y': 25, 'z': 26, '$': 27, '%': 28}
+# #:sos, $:eos, %:pad
+answer_dict_size = len(dictionary)
+
 
 class HandwrittenWords(Dataset):
     """Ensemble de donnees de mots ecrits a la main."""
@@ -30,44 +35,86 @@ class HandwrittenWords(Dataset):
 
         print('Nombre de mots:', len(self.word_list_real))
 
+        self.word_list_symbols = []
         word_list_symbols = []
 
-        # Extraction des symboles
+        # Transformation de (x,y) en indice de la case dans la grille
+        # [1,2,3
+        # 4,5,6] grille 64x32 aka indice 0-2047
         max_sequence_len = 0
+        max_answer_len = 0
         for i, word in enumerate(self.word_list_real):
+            answer = word[0]
             positions = word[1]
+
+            # normalize position from 0 to 1
             all_x = positions[0]
-            # normalize from 0 to 1
-            all_x_normalized = (all_x - np.min(all_x)) / (np.max(all_x) - np.min(all_x))
             all_y = positions[1]
+            all_x_normalized = (all_x - np.min(all_x)) / (np.max(all_x) - np.min(all_x))
             all_y_normalized = (all_y - np.min(all_y)) / (np.max(all_y) - np.min(all_y))
+
             # quantize normalized positions in 64x32 grid
             all_x_quantized = np.round(all_x_normalized * (size_x-1)).astype(int)
             all_y_quantized = np.round(all_y_normalized * (size_y-1)).astype(int)
+
             # symbol representing position in grid merging x and y
             symbols = all_x_quantized + all_y_quantized * size_x
+
+            # get max sequence length
             if(len(symbols) > max_sequence_len):
                 max_sequence_len = len(symbols)
-            word_list_symbols.append((word[0], symbols))
 
-        self.word_list_symbols = word_list_symbols
-        self.word_list_one_hot = []
+            # get max answer length
+            if(len(answer) > max_answer_len):
+                max_answer_len = len(answer)
+
+            # add to list of words
+            word_list_symbols.append((answer, symbols))
 
         # Insert sos, eos and pad symbols
-        for i, word in enumerate(self.word_list_symbols):
+        for i, word in enumerate(word_list_symbols):
             answer = word[0]
             symbols = word[1]
+
+            # add sos,eos,pad to words
+            nb_pad = max_answer_len - len(answer)
+            answer = "#" + answer + "%" + nb_pad * "$"
+
+            # get answer in symbol (0-27) form, and one-hot
+            # answer_symbol = torch.zeros(max_answer_len + 2, len(dictionary))
+            # for j, letter in enumerate(answer):
+            #     letter_symbol = dictionary[letter]
+            #     answer_symbol[j][letter_symbol] = 1
+
+            answer_symbol = []
+            for j, letter in enumerate(answer):
+                letter_symbol = dictionary[letter]
+                answer_symbol.append(letter_symbol)
+
             nb_padding = max_sequence_len - len(symbols)
             symbols = np.insert(symbols, 0, start_symbol)
             symbols = np.insert(symbols, len(symbols), stop_symbol)
             symbols = np.pad(symbols, (0, nb_padding), mode='constant', constant_values=pad_symbol)
-            self.word_list_symbols[i] = (word[0], torch.tensor(symbols, dtype=torch.long))
+            self.word_list_symbols.append((answer_symbol, torch.tensor(symbols, dtype=torch.long)))
 
         print("example : ", self.word_list_symbols[0])
+        print("answer_symbol : ", answer_symbol)
+        # self.from_onehot_to_letter(self.word_list_symbols[5][0])
         # print("example : ", self.word_list_one_hot[0])
 
     def __len__(self):
         return len(self.word_list_real)
+
+    def from_onehot_to_letter(self, answer_symbol):
+        data = []
+        for i, onehotvector in enumerate(answer_symbol):
+            a = onehotvector.argmax().item()
+            print("argmax", a)
+            b = list(dictionary)[a]
+            print("b", b)
+            data.append(b)
+        print("from_onehot_to_letter", data)
+        return data
 
     def __getitem__(self, idx):
         # return self.data_grid[idx]
@@ -132,4 +179,4 @@ if __name__ == "__main__":
     # Code de test pour aider à compléter le dataset
     a = HandwrittenWords()
     for i in range(1):
-        a.visualisation(np.random.randint(0, len(a)))
+        a.visualisation(5)
