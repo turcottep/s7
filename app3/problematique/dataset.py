@@ -144,6 +144,9 @@ class HandwrittenWords(Dataset):
         # return self.data_grid[idx]
         return self.word_list_symbols[idx]
 
+    def get_raw_input(self, idx):
+        return self.word_list_real[idx]
+
     def visualisation(self, nb_examples=1):
         # Visualisation des échantillons
         for idx in range(nb_examples):

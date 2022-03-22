@@ -32,15 +32,15 @@ class trajectory2seq(nn.Module):
 
         # encoder
         # self.encoder_embedding = nn.Embedding(self.encoder_dict_size, n_hidden)
-        self.encoder_layer = nn.GRU(1, n_hidden, n_layers, batch_first=True)
+        self.encoder_layer = nn.GRU(1, n_hidden, n_layers, batch_first=True, bidirectional=True)
 
         # decoder
-        self.decoder_layer = nn.GRU(n_hidden, n_hidden, n_layers, batch_first=True)
+        self.decoder_layer = nn.GRU(n_hidden, n_hidden, n_layers, batch_first=True, bidirectional=True)
         self.decoder_embedding = nn.Embedding(self.decoder_dict_size, n_hidden)
 
         # Couches pour attention
-        self.att_combine = nn.Linear(2*n_hidden, n_hidden)
-        self.hidden2query = nn.Linear(n_hidden, n_hidden)
+        self.att_combine = nn.Linear(4*n_hidden, n_hidden)
+        self.hidden2query = nn.Linear(2*n_hidden, 2*n_hidden)
         # À compléter
 
         # Couche dense pour la sortie
@@ -52,10 +52,10 @@ class trajectory2seq(nn.Module):
 
         # Couche dense à l'entrée du module d'attention
         query = self.hidden2query(hidden)
-
-        attention = torch.bmm(query, torch.permute(values, (0, 2, 1)))
+        permuted = torch.permute(values, (0, 2, 1))
+        attention = torch.bmm(query, permuted)
         attention_weights = torch.softmax(attention[:, 0, :], dim=1)
-        attention_weights_repeated = attention_weights[:, :, None].repeat(1, 1, self.n_hidden)
+        attention_weights_repeated = attention_weights[:, :, None].repeat(1, 1, 2*self.n_hidden)
         attention_output = torch.sum(attention_weights_repeated * values, dim=1)
 
         return attention_output, attention_weights

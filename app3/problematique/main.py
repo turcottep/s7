@@ -22,7 +22,7 @@ def main():
     # Visualiser les courbes d'apprentissage pendant l'entrainement
     learning_curves = 1
     test = 1                    # Visualiser la generation sur des echantillons de validation
-    batch_size = 100            # Taille des lots
+    batch_size = 500            # Taille des lots
     n_epochs = 50               # Nombre d'iteration sur l'ensemble de donnees
     lr = 0.01                   # Taux d'apprentissage pour l'optimizateur
     save_model = 1              # Sauvegarder le model
@@ -107,8 +107,9 @@ def main():
                 # print("target_view size", target_view.size())
 
                 loss = criterion(output_view, target_view)
-                loss.backward()
-                optimizer.step()
+                loss.backward()  # gradient = loss.backward()
+                optimizer.step()  # optimizer.step(gradient)
+
                 running_loss_train += loss.item()
 
                 # Calcul de la distance
@@ -232,8 +233,10 @@ def main():
         # Affichage des résultats
         for i in range(5):
             # Extraction d'une séquence du dataset de validation
-            target, input_seq = data_test[np.random.randint(0, len(data_test))]
+            index = np.random.randint(0, len(data_test))
+            target, input_seq = data_test[index]
             input_padded = input_seq.unsqueeze(0)
+            input_raw = data_test.get_raw_input(index)
             # Évaluation de la séquence
             output, hidden, attention_weights = model(input_padded)
             # attention_weights[2, 2, 2, 2, 2, 2]
@@ -252,11 +255,11 @@ def main():
             output_list = dataset.symbols_to_letters(output[0].argmax(dim=-1))
             print("output_string", output_list)
             print('')
-
+            nb_letter = len(output_list)
             if display_attention:
                 plt.figure("Attention")
-                for i in range(len(output_list)):
-                    plt.subplot(len(output_list), 1, i+1)
+                for i in range(nb_letter):
+                    plt.subplot(nb_letter, 2, 2*i+1)
                     attn = attention_weights[i]
                     color_map = []
                     for j in range(attn.shape[1]):
@@ -267,21 +270,30 @@ def main():
                     plt.yticks([0], [output_list[i]])
                     x_coord = []
                     y_coord = []
-                    x_i = 0
-                    y_i = 0
+                    x_j = 0
+                    y_j = 0
                     last_good_index = 0
-                    for i in range(input_seq.size(0)):
-                        theta = input_seq[i].item()
+                    for j in range(input_seq.size(0)):
+                        theta = input_seq[j].item()
                         if theta == 6:
-                            last_good_index = i
+                            last_good_index = j
                             break
-                        x_i += np.cos(theta)
-                        y_i += np.sin(theta)
-                        x_coord.append(x_i)
-                        y_coord.append(y_i)
+                        x_j += np.cos(theta)
+                        y_j += np.sin(theta)
+                        x_coord.append(x_j)
+                        y_coord.append(y_j)
                     x_coord_norm = [x / max(x_coord) for x in x_coord]
                     y_coord_norm = [y / max(y_coord) for y in y_coord]
                     plt.scatter(x_coord_norm[0:last_good_index], y_coord_norm[0:last_good_index],  c=color_map[0:last_good_index], marker='o', s=0.5)
+
+                    plt.subplot(nb_letter, 2, 2*i+2)
+                    raw_x_y = input_raw[1]
+                    raw_x = []
+                    raw_y = []
+                    for j in range(len(raw_x_y)):
+                        raw_x.append(raw_x_y[j][0])
+                        raw_y.append(raw_x_y[j][1])
+                    plt.plot(raw_x[0:last_good_index], raw_y[0:last_good_index], color='red')
                 plt.show()
 
 
