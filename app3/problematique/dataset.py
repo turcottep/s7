@@ -43,7 +43,7 @@ class HandwrittenWords(Dataset):
         # Transformation de (x,y) en indice de la case dans la grille
         # [1,2,3
         # 4,5,6] grille 64x32 aka indice 0-2047
-        max_sequence_len = 0
+        self.max_sequence_len = 0
         max_answer_len = 0
         for i, word in enumerate(self.word_list_real):
             answer = word[0]
@@ -52,19 +52,27 @@ class HandwrittenWords(Dataset):
             # normalize position from 0 to 1
             all_x = positions[0]
             all_y = positions[1]
+
+            # all_x_to_next_x = []
+            # for j in range(len(all_x) - 1):
+            #     all_x_to_next_x.append(all_x[j+1] - all_x[j])
+            # all_y_to_next_y = []
+            # for j in range(len(all_y) - 1):
+            #     all_y_to_next_y.append(all_y[j+1] - all_y[j])
+
             all_x_normalized = (all_x - np.min(all_x)) / (np.max(all_x) - np.min(all_x))
             all_y_normalized = (all_y - np.min(all_y)) / (np.max(all_y) - np.min(all_y))
 
             # quantize normalized positions in 64x32 grid
-            all_x_quantized = np.round(all_x_normalized * (size_x-1)).astype(int)
-            all_y_quantized = np.round(all_y_normalized * (size_y-1)).astype(int)
+            # all_x_quantized = np.round(all_x_normalized * (size_x-1)).astype(int)
+            # all_y_quantized = np.round(all_y_normalized * (size_y-1)).astype(int)
 
-            # symbol representing position in grid merging x and y
-            symbols = all_x_quantized + all_y_quantized * size_x
+            # # symbol representing position in grid merging x and y
+            # symbols = all_x_quantized + all_y_quantized * size_x
 
             # get max sequence length
-            if(len(all_x_quantized) > max_sequence_len):
-                max_sequence_len = len(all_x_quantized)
+            if(len(all_x) > self.max_sequence_len):
+                self.max_sequence_len = len(all_x)
 
             # get max answer length
             if(len(answer) > max_answer_len):
@@ -93,14 +101,18 @@ class HandwrittenWords(Dataset):
                 letter_symbol = dictionary[letter]
                 answer_symbol[j] = letter_symbol
 
-            # symbols = np.insert(symbols, len(symbols), stop_symbol)
             all_x = symbols[0]
             all_y = symbols[1]
-            nb_padding = max_sequence_len - len(all_x)
+
+            nb_padding = self.max_sequence_len - len(all_x)
+
+            # symbols = np.insert(symbols, len(symbols), stop_symbol)
 
             all_x_paded = np.pad(all_x, (0, nb_padding), 'constant', constant_values=all_x[-1])
             all_y_paded = np.pad(all_y, (0, nb_padding), 'constant', constant_values=all_y[-1])
             symbols = torch.tensor([all_x_paded, all_y_paded], dtype=torch.float)
+            # symbols = np.pad(symbols, (0, nb_padding), 'constant', constant_values=pad_symbol)
+            # symbols = torch.tensor(symbols, dtype=torch.long)
             self.word_list_symbols.append((answer_symbol, symbols))
 
         print("example : ", self.word_list_symbols[0])
