@@ -64,11 +64,11 @@ class HandwrittenWords(Dataset):
             all_y_normalized = (all_y - np.min(all_y)) / (np.max(all_y) - np.min(all_y))
 
             # quantize normalized positions in 64x32 grid
-            # all_x_quantized = np.round(all_x_normalized * (size_x-1)).astype(int)
-            # all_y_quantized = np.round(all_y_normalized * (size_y-1)).astype(int)
+            all_x_quantized = np.round(all_x_normalized * (size_x-1)).astype(int)
+            all_y_quantized = np.round(all_y_normalized * (size_y-1)).astype(int)
 
-            # # symbol representing position in grid merging x and y
-            # symbols = all_x_quantized + all_y_quantized * size_x
+            # symbol representing position in grid merging x and y
+            symbols = all_x_quantized + all_y_quantized * size_x
 
             # get max sequence length
             if(len(all_x) > self.max_sequence_len):
@@ -79,7 +79,7 @@ class HandwrittenWords(Dataset):
                 max_answer_len = len(answer)
 
             # add to list of words
-            word_list_symbols.append((answer, [all_x_normalized, all_y_normalized]))
+            word_list_symbols.append((answer, symbols))
 
         # Insert sos, eos and pad symbols
         for i, word in enumerate(word_list_symbols):
@@ -101,17 +101,17 @@ class HandwrittenWords(Dataset):
                 letter_symbol = dictionary[letter]
                 answer_symbol[j] = letter_symbol
 
-            all_x = symbols[0]
-            all_y = symbols[1]
+            # all_x = symbols[0]
+            # all_y = symbols[1]
 
-            nb_padding = self.max_sequence_len - len(all_x)
+            nb_padding = self.max_sequence_len - len(symbols)
 
             # symbols = np.insert(symbols, len(symbols), stop_symbol)
 
-            all_x_paded = np.pad(all_x, (0, nb_padding), 'constant', constant_values=all_x[-1])
-            all_y_paded = np.pad(all_y, (0, nb_padding), 'constant', constant_values=all_y[-1])
-            symbols = torch.tensor([all_x_paded, all_y_paded], dtype=torch.float)
-            # symbols = np.pad(symbols, (0, nb_padding), 'constant', constant_values=pad_symbol)
+            # all_x_paded = np.pad(all_x, (0, nb_padding), 'constant', constant_values=all_x[-1])
+            # all_y_paded = np.pad(all_y, (0, nb_padding), 'constant', constant_values=all_y[-1])
+            # symbols = torch.tensor([all_x_paded, all_y_paded], dtype=torch.float)
+            symbols = np.pad(symbols, (0, nb_padding), 'constant', constant_values=pad_symbol)
             # symbols = torch.tensor(symbols, dtype=torch.long)
             self.word_list_symbols.append((answer_symbol, symbols))
 

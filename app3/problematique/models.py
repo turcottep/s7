@@ -14,7 +14,7 @@ class trajectory2seq(nn.Module):
     def __init__(self, device):
         super(trajectory2seq, self).__init__()
         # Definition des parametres
-        self.n_hidden = n_hidden = 20
+        self.n_hidden = n_hidden = 8
         # self.n_layers = n_layers
         self.device = device
         # self.symb2int = symb2int
@@ -30,8 +30,8 @@ class trajectory2seq(nn.Module):
         self.decoder_dict_size = dataset.answer_dict_size
 
         # encoder
-        # self.encoder_embedding = nn.Embedding(self.encoder_dict_size, n_hidden)
-        self.encoder_layer = nn.GRU(457, n_hidden, n_layers, batch_first=True)
+        self.encoder_embedding = nn.Embedding(self.encoder_dict_size, n_hidden)
+        self.encoder_layer = nn.GRU(n_hidden, n_hidden, n_layers, batch_first=True)
 
         # decoder
         self.decoder_layer = nn.GRU(n_hidden, n_hidden, n_layers, batch_first=True)
@@ -94,9 +94,9 @@ class trajectory2seq(nn.Module):
         # print("words one hot shape", words_one_hot.shape)
 
         # Passe avant
-        # embedded = self.encoder_embedding(x)
+        embedded = self.encoder_embedding(x)
 
-        encoded, hidden = self.encoder_layer(x)
+        encoded, hidden = self.encoder_layer(embedded)
         out, hidden, attention_weights = self.decoderWithAttn(encoded, hidden)
         # decoded, hidden = self.decoder_layer(encoded)
         # out = self.decoder_embedding(decoded)

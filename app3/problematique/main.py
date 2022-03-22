@@ -22,7 +22,7 @@ def main():
     learning_curves = 1
     test = 1                    # Visualiser la generation sur des echantillons de validation
     batch_size = 100            # Taille des lots
-    n_epochs = 100               # Nombre d'iteration sur l'ensemble de donnees
+    n_epochs = 50               # Nombre d'iteration sur l'ensemble de donnees
     lr = 0.01                   # Taux d'apprentissage pour l'optimizateur
 
     n_hidden = 20               # Nombre de neurones caches par couche
