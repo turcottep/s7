@@ -17,6 +17,7 @@ class trajectory2seq(nn.Module):
         self.n_hidden = n_hidden = 20
         # self.n_layers = n_layers
         self.device = device
+        self.max_len_input = dataset.max_len_input
         # self.symb2int = symb2int
         # self.int2symb = int2symb
         # self.dict_size = dict_size
@@ -31,7 +32,7 @@ class trajectory2seq(nn.Module):
 
         # encoder
         # self.encoder_embedding = nn.Embedding(self.encoder_dict_size, n_hidden)
-        self.encoder_layer = nn.GRU(457, n_hidden, n_layers, batch_first=True)
+        self.encoder_layer = nn.GRU(self.max_len_input, n_hidden, n_layers, batch_first=True)
 
         # decoder
         self.decoder_layer = nn.GRU(n_hidden, n_hidden, n_layers, batch_first=True)
@@ -63,12 +64,12 @@ class trajectory2seq(nn.Module):
         # Décodeur avec attention
 
         # Initialisation des variables
-        max_len_encoder = 457
+        # max_len_encoder = self.max_len_input
         max_len_decoder = 6
         batch_size = hidden.shape[1]
         vec_in = torch.zeros((batch_size, 1)).long()  # Vecteur d'entrée pour décodage
         vec_out = torch.zeros((batch_size, max_len_decoder, self.decoder_dict_size))  # Vecteur de sortie du décodage
-        attention_weights = torch.zeros((batch_size, max_len_encoder, max_len_decoder))  # Poids d'attention
+        attention_weights = []  # Poids d'attention
 
         # Boucle pour tous les symboles de sortie
         for i in range(max_len_decoder):
@@ -76,7 +77,7 @@ class trajectory2seq(nn.Module):
             embedded = self.decoder_embedding(vec_in)
             buffer, hidden = self.decoder_layer(embedded, hidden)
             a, attention_weights_buffer = self.attentionModule(buffer, encoded)
-            # attention_weights[:, :, i] = attention_weights_buffer
+            attention_weights.append(attention_weights_buffer)
             buffer2 = self.att_combine(torch.cat((buffer[:, 0, :], a), dim=1))
             temp_temp_boy = self.linear_out(buffer2)
             temp_boy = temp_temp_boy[:, :]

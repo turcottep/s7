@@ -16,15 +16,15 @@ def main():
    # ---------------- Paramètres et hyperparamètres ----------------#
     # Forcer l'utilisation du CPU (si un GPU est disponible)
     force_cpu = 1
-    training = 1                # Faire l'entrainement sur l'ensemble de donnees
-    display_attention = 0       # Affichage des poids d'attention
+    training = 1             # Faire l'entrainement sur l'ensemble de donnees
+    display_attention = 1       # Affichage des poids d'attention
     # Visualiser les courbes d'apprentissage pendant l'entrainement
     learning_curves = 1
     test = 1                    # Visualiser la generation sur des echantillons de validation
     batch_size = 100            # Taille des lots
-    n_epochs = 100               # Nombre d'iteration sur l'ensemble de donnees
+    n_epochs = 50               # Nombre d'iteration sur l'ensemble de donnees
     lr = 0.01                   # Taux d'apprentissage pour l'optimizateur
-
+    save_model = 1              # Sauvegarder le model
     n_hidden = 20               # Nombre de neurones caches par couche
     n_layers = 2               # Nombre de de couches
 
@@ -43,18 +43,20 @@ def main():
     print("Device:", device)
 
     # Instanciation de l'ensemble de données
-    data = HandwrittenWords()
+    data_train_val = HandwrittenWords("data_trainval.p")
+    data_test = HandwrittenWords("data_test.p")
 
     # Séparation de l'ensemble de données (entraînement et validation)
-    dataset_train = data[0:int(len(data)*0.8)]
-    dataset_val = data[int(len(data)*0.8):]
+    dataset_train = data_train_val[0:int(len(data_train_val)*0.8)]
+    dataset_val = data_train_val[int(len(data_train_val)*0.8):]
 
     # Instanciation des dataloaders
     dataload_train = DataLoader(
         dataset_train, batch_size=batch_size, shuffle=True, num_workers=n_workers)
     dataload_val = DataLoader(
         dataset_val, batch_size=batch_size, shuffle=True, num_workers=n_workers)
-
+    dataload_test = DataLoader(
+        data_test, batch_size=batch_size, shuffle=True, num_workers=n_workers)
     # Instanciation du model
     model = trajectory2seq(device)
 
@@ -83,8 +85,8 @@ def main():
             running_loss_train = 0
             dist = 0
 
-            for batch_idx, data in enumerate(dataload_train):
-                target, input_seq = data
+            for batch_idx, data_train_val in enumerate(dataload_train):
+                target, input_seq = data_train_val
 
                 input_seq = input_seq.to(device)
 
@@ -127,8 +129,8 @@ def main():
             running_loss_val = 0
             dist_val = 0
 
-            for batch_idx, data in enumerate(dataload_val):
-                target, input_seq = data
+            for batch_idx, data_train_val in enumerate(dataload_val):
+                target, input_seq = data_train_val
 
                 input_seq = input_seq.to(device)
 
@@ -156,24 +158,41 @@ def main():
             print()
             print("target 0", dataset.symbols_to_letters(target[0]))
             print("output 0", dataset.symbols_to_letters(output[0].argmax(dim=-1)))
+            matrix = confusion_matrix_batch(output, target)
+            print(matrix)
 
             # Ajouter les loss aux listes
             # À compléter
 
-            # Enregistrer les poids
-            # À compléter
+            # save model
+            if save_model:
+                torch.save(model.state_dict(),
+                           "model_epoch_{}.pt".format(epoch))
 
             if learning_curves:
                 train_loss.append(running_loss_train/len(dataload_train))
                 train_dist.append(dist/len(dataload_train))
                 val_loss.append(running_loss_val/len(dataload_val))
                 val_dist.append(dist_val/len(dataload_val))
+                # plt.figure("learning curves")
                 ax.cla()
                 ax.plot(train_loss, label='training loss')
                 ax.plot(train_dist, label='training distance')
                 ax.plot(val_loss, label='validation loss')
                 ax.plot(val_dist, label='validation distance')
                 ax.legend()
+                plt.draw()
+                plt.pause(0.01)
+
+            if True:
+                plt.figure("Attention")
+                ax.cla()
+                plt.imshow(matrix)
+                plt.ylabel('True class')
+                plt.yticks(range(dataset.answer_dict_size), dataset.dictionary.keys())
+                plt.xticks(range(dataset.answer_dict_size), dataset.dictionary.keys())
+                plt.xlabel('Predicted class')
+                # plt.colorbar()
                 plt.draw()
                 plt.pause(0.01)
 
@@ -199,7 +218,61 @@ def main():
         # Affichage de la matrice de confusion
         # À compléter
 
-        pass
+        # Évaluation
+
+        # Chargement des poids
+        state_dict = torch.load('model_epoch_50.pt')
+        model.load_state_dict(state_dict)
+        # dataset.symb2int = model.symb2int
+        # dataset.int2symb = model.int2symb
+
+        # Affichage des résultats
+        for i in range(1):
+            # Extraction d'une séquence du dataset de validation
+            target, input_seq = data_test[np.random.randint(0, len(data_test))]
+            input_padded = input_seq.unsqueeze(0)
+            # Évaluation de la séquence
+            output, hidden, attention_weights = model(input_padded)
+            # Affichage
+            # in_seq = [model.int2symb['fr'][i] for i in fr_seq.detach().cpu().tolist()]
+            # target = [model.int2symb['en'][i] for i in target_seq.detach().cpu().tolist()]
+            # out_seq = [model.int2symb['en'][i] for i in out]
+
+            # out_seq = out_seq[:out_seq.index('<eos>')+1]
+            # in_seq = in_seq[:in_seq.index('<eos>')+1]
+            # target = target[:target.index('<eos>')+1]
+
+            # print('Input:  ', ' '.join(in_seq))
+            # print('Target: ', ' '.join(target))
+            # print('Output: ', ' '.join(out_seq))
+            output_list = dataset.symbols_to_letters(output[0].argmax(dim=-1))
+            print("output_string", output_list)
+            print('')
+
+            if display_attention:
+                plt.figure("Attention")
+                for i in range(len(output_list)):
+                    plt.subplot(len(output_list), 1, i+1)
+                    attn = attention_weights[i]
+                    attn_x = attn[0][0].item()
+                    attn_y = attn[0][1].item()
+                    plt.plot(attn_x, attn_y, 'o', color='red', markersize=10)
+                    # plt.imshow(attn[0:len(input_seq), 0:len(output)], origin='lower',  vmax=1, vmin=0, cmap='pink')
+
+                    plt.yticks([0], [output_list[i]])
+                    x_delta = input_seq[0]
+                    y_delta = input_seq[1]
+                    x_coord = []
+                    y_coord = []
+                    x_i = 0
+                    y_i = 0
+                    for i in range(len(x_delta)):
+                        x_i += x_delta[i].item()
+                        y_i += y_delta[i].item()
+                        x_coord.append(x_i)
+                        y_coord.append(y_i)
+                    plt.plot(x_coord, y_coord, 'o', color='gray', markersize=0.1)
+                plt.show()
 
 
 if __name__ == '__main__':

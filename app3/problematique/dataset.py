@@ -10,6 +10,7 @@ import pickle
 
 size_x = 64
 size_y = 32
+max_len_input = 456
 nb_symbols = size_x * size_y
 dict_size = nb_symbols + 3
 
@@ -24,7 +25,7 @@ answer_dict_size = len(dictionary)
 class HandwrittenWords(Dataset):
     """Ensemble de donnees de mots ecrits a la main."""
 
-    def __init__(self):
+    def __init__(self, filename):
 
         # Lecture du text
         self.pad_symbol = pad_symbol = nb_symbols  # '<pad>'
@@ -32,7 +33,7 @@ class HandwrittenWords(Dataset):
         self.stop_symbol = stop_symbol = nb_symbols + 2  # '<eos>'
 
         self.word_list_real = dict()
-        with open('data_trainval.p', 'rb') as fp:
+        with open(filename, 'rb') as fp:
             self.word_list_real = pickle.load(fp)
 
         print('Nombre de mots:', len(self.word_list_real))
@@ -53,15 +54,15 @@ class HandwrittenWords(Dataset):
             all_x = positions[0]
             all_y = positions[1]
 
-            # all_x_to_next_x = []
-            # for j in range(len(all_x) - 1):
-            #     all_x_to_next_x.append(all_x[j+1] - all_x[j])
-            # all_y_to_next_y = []
-            # for j in range(len(all_y) - 1):
-            #     all_y_to_next_y.append(all_y[j+1] - all_y[j])
-
             all_x_normalized = (all_x - np.min(all_x)) / (np.max(all_x) - np.min(all_x))
             all_y_normalized = (all_y - np.min(all_y)) / (np.max(all_y) - np.min(all_y))
+
+            all_x_to_next_x = []
+            for j in range(len(all_x_normalized) - 1):
+                all_x_to_next_x.append(all_x_normalized[j+1] - all_x_normalized[j])
+            all_y_to_next_y = []
+            for j in range(len(all_y_normalized) - 1):
+                all_y_to_next_y.append(all_y_normalized[j+1] - all_y_normalized[j])
 
             # quantize normalized positions in 64x32 grid
             # all_x_quantized = np.round(all_x_normalized * (size_x-1)).astype(int)
@@ -71,21 +72,22 @@ class HandwrittenWords(Dataset):
             # symbols = all_x_quantized + all_y_quantized * size_x
 
             # get max sequence length
-            if(len(all_x) > self.max_sequence_len):
-                self.max_sequence_len = len(all_x)
+            if(len(all_x_to_next_x) > self.max_sequence_len):
+                self.max_sequence_len = len(all_x_to_next_x)
 
             # get max answer length
             if(len(answer) > max_answer_len):
                 max_answer_len = len(answer)
 
             # add to list of words
-            word_list_symbols.append((answer, [all_x_normalized, all_y_normalized]))
+            word_list_symbols.append((answer, [all_x_to_next_x, all_y_to_next_y]))
 
         # Insert sos, eos and pad symbols
         for i, word in enumerate(word_list_symbols):
             answer = word[0]
             symbols = word[1]
-
+            if answer == []:
+                answer = ""
             # add sos,eos,pad to words
             nb_pad = max_answer_len - len(answer)
             answer = answer + "$" + nb_pad * "#"
@@ -104,12 +106,12 @@ class HandwrittenWords(Dataset):
             all_x = symbols[0]
             all_y = symbols[1]
 
-            nb_padding = self.max_sequence_len - len(all_x)
+            nb_padding = max_len_input - len(all_x)
 
             # symbols = np.insert(symbols, len(symbols), stop_symbol)
 
-            all_x_paded = np.pad(all_x, (0, nb_padding), 'constant', constant_values=all_x[-1])
-            all_y_paded = np.pad(all_y, (0, nb_padding), 'constant', constant_values=all_y[-1])
+            all_x_paded = np.pad(all_x, (0, nb_padding), 'constant', constant_values=0)
+            all_y_paded = np.pad(all_y, (0, nb_padding), 'constant', constant_values=0)
             symbols = torch.tensor([all_x_paded, all_y_paded], dtype=torch.float)
             # symbols = np.pad(symbols, (0, nb_padding), 'constant', constant_values=pad_symbol)
             # symbols = torch.tensor(symbols, dtype=torch.long)
@@ -138,59 +140,65 @@ class HandwrittenWords(Dataset):
         # return self.data_grid[idx]
         return self.word_list_symbols[idx]
 
-    def visualisation(self, idx):
+    def visualisation(self, nb_examples=1):
         # Visualisation des échantillons
-        answer = self.word_list_real[idx][0]
-        positions = self.word_list_real[idx][1]
-        all_x = positions[0]
-        all_y = positions[1]
+        for idx in range(nb_examples):
 
-        # show in matplotlib
-        # plt.plot(all_x, all_y, 'o')
-        # # show text
-        # plt.text(all_x[0], all_y[0], answer)
+            answer = self.word_list_real[idx][0]
+            positions = self.word_list_real[idx][1]
+            all_x = positions[0]
+            all_y = positions[1]
 
-        # data_grid = self.data_grid[idx][1]
-        # x_grid = data_grid[0]
-        # y_grid = data_grid[1]
+            # show in matplotlib
+            # plt.plot(all_x, all_y, 'o')
+            # # show text
+            # plt.text(all_x[0], all_y[0], answer)
 
-        symbols = self.word_list_symbols[idx][1]
-        x_from_symbols = symbols % size_x
-        y_from_symbols = symbols // size_x
+            # data_grid = self.data_grid[idx][1]
+            # x_grid = data_grid[0]
+            # y_grid = data_grid[1]
 
-        # print("x_grid", x_grid[0], "y_grid", y_grid[0], "symbol", symbols[0],
-        #       "x_from_symbols", x_from_symbols[0], "y_from_symbols", y_from_symbols[0])
-        # plot 0 special case
-        # plt.plot(x_grid[0], y_grid[0], 'x')
-        # show in matplotlib
+            symbols = self.word_list_symbols[idx][1]
+            x_delta = symbols[0]
+            y_delta = symbols[1]
 
-        # title
-        plt.figure(num='This is the title : '+answer)
+            x_coord = []
+            y_coord = []
+            x_i = 0
+            y_i = 0
+            for i in range(len(x_delta)):
+                x_i += x_delta[i].item()
+                y_i += y_delta[i].item()
+                x_coord.append(x_i)
+                y_coord.append(y_i)
 
-        # show in subplot 1
-        plt.subplot(2, 1, 1)
+            # print("x_coord : ", x_coord)
+            # print("x_grid", x_grid[0], "y_grid", y_grid[0], "symbol", symbols[0],
+            #       "x_from_symbols", x_from_symbols[0], "y_from_symbols", y_from_symbols[0])
+            # plot 0 special case
+            # plt.plot(x_grid[0], y_grid[0], 'x')
+            # show in matplotlib
 
-        # draw line from point to point
-        for i in range(len(x_from_symbols)):
-            if(i == 0):
-                plt.plot(x_from_symbols[i], y_from_symbols[i], 'x')
-            else:
-                if(symbols[i] < nb_symbols):
-                    plt.plot([x_from_symbols[i-1], x_from_symbols[i]],
-                             [y_from_symbols[i-1], y_from_symbols[i]], 'b')
+            # title
+            plt.figure(num='This is the title : '+answer)
 
-        plt.plot(x_from_symbols, y_from_symbols, 'o')
+            # show in subplot 1
+            plt.subplot(2, 1, 1)
 
-        # show in subplot 2
-        plt.subplot(2, 1, 2)
-        plt.plot(all_x, all_y, 'o')
+            plt.plot(x_coord, y_coord, 'o')
 
-        # grid every pixel
-        # plt.plot(x_grid, y_grid, 'o')
+            # plt.plot(x_from_symbols, y_from_symbols, 'o')
 
-        plt.text(0, 0, answer)
+            # show in subplot 2
+            plt.subplot(2, 1, 2)
+            plt.plot(all_x, all_y, 'o')
 
-        plt.show()
+            # grid every pixel
+            # plt.plot(x_grid, y_grid, 'o')
+
+            plt.text(0, 0, answer)
+
+            plt.show()
 
 
 def symbols_to_letters(symbols):
@@ -204,5 +212,4 @@ def symbols_to_letters(symbols):
 if __name__ == "__main__":
     # Code de test pour aider à compléter le dataset
     a = HandwrittenWords()
-    for i in range(1):
-        a.visualisation(5)
+    a.visualisation(10)
