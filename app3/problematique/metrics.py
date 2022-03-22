@@ -40,7 +40,8 @@ def confusion_matrix_batch(predictions, labels):
     matrix = np.zeros((dataset.answer_dict_size, dataset.answer_dict_size))
     for i in range(predictions.shape[0]):
         matrix = confusion_matrix(matrix, predictions[i], labels[i])
-    return matrix
+    # return rows 1-27 and columns 1-27
+    return matrix[1:dataset.answer_dict_size-1, 1:dataset.answer_dict_size-1]
 
 
 def confusion_matrix(matrix, pred, true):

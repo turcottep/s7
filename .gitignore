@@ -131,3 +131,5 @@ dmypy.json
 app1/output/
 
 .DS_Store
+
+*.pt

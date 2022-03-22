@@ -32,7 +32,7 @@ class trajectory2seq(nn.Module):
 
         # encoder
         # self.encoder_embedding = nn.Embedding(self.encoder_dict_size, n_hidden)
-        self.encoder_layer = nn.GRU(self.max_len_input, n_hidden, n_layers, batch_first=True)
+        self.encoder_layer = nn.GRU(1, n_hidden, n_layers, batch_first=True)
 
         # decoder
         self.decoder_layer = nn.GRU(n_hidden, n_hidden, n_layers, batch_first=True)
@@ -96,7 +96,7 @@ class trajectory2seq(nn.Module):
 
         # Passe avant
         # embedded = self.encoder_embedding(x)
-
+        x = x.unsqueeze(2)
         encoded, hidden = self.encoder_layer(x)
         out, hidden, attention_weights = self.decoderWithAttn(encoded, hidden)
         # decoded, hidden = self.decoder_layer(encoded)

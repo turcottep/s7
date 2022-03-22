@@ -16,8 +16,9 @@ def main():
    # ---------------- Paramètres et hyperparamètres ----------------#
     # Forcer l'utilisation du CPU (si un GPU est disponible)
     force_cpu = 1
-    training = 1             # Faire l'entrainement sur l'ensemble de donnees
+    training = 0             # Faire l'entrainement sur l'ensemble de donnees
     display_attention = 1       # Affichage des poids d'attention
+    display_confusion = 0    # Affichage de la matrice de confusion
     # Visualiser les courbes d'apprentissage pendant l'entrainement
     learning_curves = 1
     test = 1                    # Visualiser la generation sur des echantillons de validation
@@ -88,7 +89,7 @@ def main():
             for batch_idx, data_train_val in enumerate(dataload_train):
                 target, input_seq = data_train_val
 
-                input_seq = input_seq.to(device)
+                # input_seq = input_seq.to(device)
 
                 optimizer.zero_grad()
                 # print("input_seq:", input_seq.shape)
@@ -155,11 +156,11 @@ def main():
                 len(dataload_val.dataset), running_loss_val /
                 (batch_idx + 1),
                 dist_val/len(dataload_val)))
-            print()
-            print("target 0", dataset.symbols_to_letters(target[0]))
-            print("output 0", dataset.symbols_to_letters(output[0].argmax(dim=-1)))
+            # print()
+            # print("target 0", dataset.symbols_to_letters(target[0]))
+            # print("output 0", dataset.symbols_to_letters(output[0].argmax(dim=-1)))
             matrix = confusion_matrix_batch(output, target)
-            print(matrix)
+            # print(matrix)
 
             # Ajouter les loss aux listes
             # À compléter
@@ -184,13 +185,15 @@ def main():
                 plt.draw()
                 plt.pause(0.01)
 
-            if True:
+            if display_confusion:
                 plt.figure("Attention")
                 ax.cla()
                 plt.imshow(matrix)
                 plt.ylabel('True class')
-                plt.yticks(range(dataset.answer_dict_size), dataset.dictionary.keys())
-                plt.xticks(range(dataset.answer_dict_size), dataset.dictionary.keys())
+                letters_position = list(range(dataset.answer_dict_size))[:-2]
+                letters = list(dataset.dictionary.keys())[1:-1]
+                plt.yticks(letters_position, letters)
+                plt.xticks(letters_position, letters)
                 plt.xlabel('Predicted class')
                 # plt.colorbar()
                 plt.draw()
@@ -227,12 +230,13 @@ def main():
         # dataset.int2symb = model.int2symb
 
         # Affichage des résultats
-        for i in range(1):
+        for i in range(5):
             # Extraction d'une séquence du dataset de validation
             target, input_seq = data_test[np.random.randint(0, len(data_test))]
             input_padded = input_seq.unsqueeze(0)
             # Évaluation de la séquence
             output, hidden, attention_weights = model(input_padded)
+            # attention_weights[2, 2, 2, 2, 2, 2]
             # Affichage
             # in_seq = [model.int2symb['fr'][i] for i in fr_seq.detach().cpu().tolist()]
             # target = [model.int2symb['en'][i] for i in target_seq.detach().cpu().tolist()]
@@ -254,24 +258,30 @@ def main():
                 for i in range(len(output_list)):
                     plt.subplot(len(output_list), 1, i+1)
                     attn = attention_weights[i]
-                    attn_x = attn[0][0].item()
-                    attn_y = attn[0][1].item()
-                    plt.plot(attn_x, attn_y, 'o', color='red', markersize=10)
+                    color_map = []
+                    for j in range(attn.shape[1]):
+                        color_map.append(attn[0][j].item())
+                    # plt.plot(attn_x, attn_y, 'o', color='red', markersize=10)
                     # plt.imshow(attn[0:len(input_seq), 0:len(output)], origin='lower',  vmax=1, vmin=0, cmap='pink')
 
                     plt.yticks([0], [output_list[i]])
-                    x_delta = input_seq[0]
-                    y_delta = input_seq[1]
                     x_coord = []
                     y_coord = []
                     x_i = 0
                     y_i = 0
-                    for i in range(len(x_delta)):
-                        x_i += x_delta[i].item()
-                        y_i += y_delta[i].item()
+                    last_good_index = 0
+                    for i in range(input_seq.size(0)):
+                        theta = input_seq[i].item()
+                        if theta == 6:
+                            last_good_index = i
+                            break
+                        x_i += np.cos(theta)
+                        y_i += np.sin(theta)
                         x_coord.append(x_i)
                         y_coord.append(y_i)
-                    plt.plot(x_coord, y_coord, 'o', color='gray', markersize=0.1)
+                    x_coord_norm = [x / max(x_coord) for x in x_coord]
+                    y_coord_norm = [y / max(y_coord) for y in y_coord]
+                    plt.scatter(x_coord_norm[0:last_good_index], y_coord_norm[0:last_good_index],  c=color_map[0:last_good_index], marker='o', s=0.5)
                 plt.show()
 
 
